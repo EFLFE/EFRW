@@ -28,7 +28,7 @@ namespace EFRW.Src
 
             if (player.animation == Player.AnimationIndex.Flip)
             {
-                player.mushroomEffect = mushCap;
+                player.mushroomEffect += (1f - player.mushroomEffect) / 6f;
             }
             else if (player.mushroomEffect > 0f)
             {
