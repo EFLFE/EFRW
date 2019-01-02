@@ -1,5 +1,4 @@
 ﻿using System;
-using MonoMod.ModInterop;
 using Partiality.Modloader;
 using UnityEngine;
 
@@ -19,20 +18,29 @@ namespace EFRW.Src
         public override void OnLoad()
         {
             base.OnLoad();
-            On.Player.Update += HookedUpdate;
+            On.Player.Update += Player_Update;
+            On.Player.MovementUpdate += Player_MovementUpdate;
         }
 
-        public void HookedUpdate(On.Player.orig_Update orig, Player player, bool eu)
+        private void Player_MovementUpdate(On.Player.orig_MovementUpdate orig, Player self, bool eu)
         {
-            //Debug.Log("player.mushroomEffect: " + player.mushroomEffect.ToString());
 
-            if (player.animation == Player.AnimationIndex.Flip)
+
+            orig(self, eu);
+        }
+
+        public void Player_Update(On.Player.orig_Update orig, Player player, bool eu)
+        {
+            if (player.mushroomCounter == 0)
             {
-                player.mushroomEffect += (1f - player.mushroomEffect) / 6f;
-            }
-            else if (player.mushroomEffect > 0f)
-            {
-                player.mushroomEffect -= 0.025f;
+                if (player.animation == Player.AnimationIndex.Flip)
+                {
+                    player.mushroomEffect += (1f - player.mushroomEffect) / 4f;
+                }
+                else if (player.mushroomEffect > 0f)
+                {
+                    player.mushroomEffect -= 0.025f;
+                }
             }
 
             orig(player, eu);
