@@ -193,10 +193,10 @@ namespace EFRW.Src
                 acc = minAcc;
             }
 
-            // air In Lungs 2
+            // air In Lungs x2
             if (self.submerged && self.airInLungs < 0.9f && self.airInLungs > 0.006f)
             {
-                self.airInLungs += 0.00105f; // 0.0021
+                self.airInLungs += 0.00105f; // +0.0021
             }
 
             // set
