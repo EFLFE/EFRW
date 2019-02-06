@@ -44,10 +44,6 @@
     <Reference Include="Partiality">
       <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Rain World\PartialityLauncher_3_11\bin\Partiality.dll</HintPath>
     </Reference>
-    <Reference Include="RustyMachine, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Rain World\Mods\RustyMachine.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
