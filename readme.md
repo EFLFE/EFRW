@@ -7,6 +7,8 @@ Simple (and unbalanced) mod that adds 4 new features:
 * Second breath underwater (AirInLungs x2);
 * Broken teleportation (key C).
 
+Source: https://github.com/EFLFE/EFRW
+
 ## How to install
 
 Use the latest version of Partiality (0.3.11 or newer)

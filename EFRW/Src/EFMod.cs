@@ -6,6 +6,7 @@ namespace EFRW.Src
 {
     public class EFMod : PartialityMod
     {
+        // new features
         const bool EXPERIMENTAL = false;
 
         // back flip slow
@@ -14,7 +15,6 @@ namespace EFRW.Src
         float acc;
         float minAcc;
         float maxAcc;
-        //FLabel label;
 
         FLabel introLabel;
         char[] introText;
@@ -52,15 +52,7 @@ namespace EFRW.Src
 
         private void Water_DrawSprites(On.Water.orig_DrawSprites orig, Water self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
-            // not easy. where the alpha?
-            if (clearWater)
-            {
-                sLeaser.sprites[1].scale = 0f;
-            }
-            else
-                sLeaser.sprites[1].scale = 1f;
-
-            //sLeaser.sprites[1].scale = clearWater ? 0f : 1f;
+            sLeaser.sprites[1].scale = clearWater ? 0f : 1f;
             orig(self, sLeaser, rCam, timeStacker, camPos);
         }
 
@@ -69,22 +61,21 @@ namespace EFRW.Src
             // init
             if (!initMovementUpdate)
             {
-                //label = new FLabel("font", "text");
-                //label.SetPosition(120, 120);
-                //Futile.stage.AddChild(label);
+                if (EXPERIMENTAL)
+                {
+                    introLabel = new FLabel("font", "");
+                    introLabel.SetPosition(120, 240);
+                    Futile.stage.AddChild(introLabel);
+                }
 
-                introLabel = new FLabel("font", "");
-                introLabel.SetPosition(120, 240);
-                Futile.stage.AddChild(introLabel);
-
-                initMovementUpdate = true;
                 acc = self.slugcatStats.runspeedFac;
                 minAcc = acc;
                 maxAcc = acc * 1.75f;
 
                 hookPos = new Vector2[self.bodyChunks.Length];
 
-                Debug.Log("acc: " + acc.ToString() + " min: " + minAcc.ToString() + " max: " + maxAcc.ToString());
+                initMovementUpdate = true;
+                //Debug.Log("acc: " + acc.ToString() + " min: " + minAcc.ToString() + " max: " + maxAcc.ToString());
             }
 
             if (EXPERIMENTAL)
@@ -101,7 +92,19 @@ namespace EFRW.Src
                 }
             }
 
-            // back flip slowmotion
+            BrokenTeleportation(self);
+            BackFlipSlowmotion(self);
+            AccMovement(self);
+            AirInLungsX2(self);
+
+            // set data
+            clearWater = self.submerged;
+
+            orig(self, eu);
+        }
+
+        void BackFlipSlowmotion(Player self)
+        {
             if (self.mushroomCounter == 0)
             {
                 if (self.animation == Player.AnimationIndex.Flip)
@@ -113,7 +116,35 @@ namespace EFRW.Src
                     self.mushroomEffect -= 0.025f;
                 }
             }
+        }
 
+        void AccMovement(Player self)
+        {
+            if (self.animation == Player.AnimationIndex.None
+                && self.input[0].x != 0f
+                && self.input[0].y == 0f)
+            {
+                if (acc < maxAcc && !self.input[0].jmp)
+                    acc += 0.009f;
+            }
+            else
+            {
+                acc = minAcc;
+            }
+
+            self.slugcatStats.runspeedFac = acc;
+        }
+
+        void AirInLungsX2(Player self)
+        {
+            if (self.submerged && self.airInLungs < 0.9f && self.airInLungs > 0.006f)
+            {
+                self.airInLungs += 0.00105f; // +0.0021
+            }
+        }
+
+        void BrokenTeleportation(Player self)
+        {
             if (hookRoom != null && hookRoom != self.room)
             {
                 // auto reset in new room
@@ -178,48 +209,6 @@ namespace EFRW.Src
                         hasPosHook = false;
                 }
             }
-            // === ===
-
-            // acc+
-            if (self.animation == Player.AnimationIndex.None
-                && self.input[0].x != 0f
-                && self.input[0].y == 0f)
-            {
-                if (acc < maxAcc && !self.input[0].jmp)
-                    acc += 0.009f;
-            }
-            else
-            {
-                acc = minAcc;
-            }
-
-            // air In Lungs x2
-            if (self.submerged && self.airInLungs < 0.9f && self.airInLungs > 0.006f)
-            {
-                self.airInLungs += 0.00105f; // +0.0021
-            }
-
-            // set
-            self.slugcatStats.runspeedFac = acc;
-            //label.text = "airInLungs: " + self.airInLungs.ToString() + "\nlungsFac:" + self.slugcatStats.lungsFac.ToString();
-
-            /*
-            int airPer = (int)Math.Round((self.airInLungs) * 100.0, MidpointRounding.ToEven);
-
-            if (airPer < 50 && self.submerged)
-            {
-                label.text = "air " + airPer.ToString();
-                label.alpha = 1f - (self.airInLungs * 2f);
-            }
-            else
-            {
-                label.text = string.Empty;
-            }
-            */
-
-            clearWater = self.submerged;
-
-            orig(self, eu);
         }
 
         void PlaySound(Player player, SoundID soundID)
