@@ -15,5 +15,6 @@ Use the latest version of Partiality (0.3.11 or newer)
 https://github.com/PartialityModding/PartialityLauncher/releases
 
 ## TODO
-* Fix telepor
-* Change the alpha for water
+* Fix telepor;
+* Change the alpha for water;
+* Visual effect for teleporation.

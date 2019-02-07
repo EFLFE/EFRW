@@ -1,4 +1,5 @@
 ﻿using System;
+using OptionalUI;
 using Partiality.Modloader;
 using UnityEngine;
 
@@ -7,7 +8,10 @@ namespace EFRW.Src
     public class EFMod : PartialityMod
     {
         // new features
-        const bool EXPERIMENTAL = false;
+        const bool EXPERIMENTAL = true;
+
+        static EFMod instance;
+        static EFConfig config;
 
         // back flip slow
         //const float mushCap = 0.17f;
@@ -27,32 +31,39 @@ namespace EFRW.Src
         Room hookRoom;
         int tpInTime;
 
-        bool clearWater;
+        bool slugcatUnderWater;
 
         public override void Init()
         {
+            instance = this;
             base.Init();
             ModID = "EFMod";
             author = "EFLFE";
-            introText = "EFMod for RainWorld (v3.4)".ToCharArray();
-            //FSprite sprite = new FSprite("pixel");
-            //sprite.scale
+            Version = "4.0";
+            introText = "EFMod for RainWorld (v4.0)".ToCharArray();
         }
+
+        public static OptionInterface LoadOI()
+        {
+            config = new EFConfig(instance);
+            return config;
+        }
+
+        //public override void OnEnable()
+        //{
+        //    config.Initialize();
+        //}
 
         public override void OnLoad()
         {
             base.OnLoad();
             On.Player.MovementUpdate += Player_MovementUpdate;
-
-            if (EXPERIMENTAL)
-            {
-                On.Water.DrawSprites += Water_DrawSprites;
-            }
+            On.Water.DrawSprites += Water_DrawSprites;
         }
 
         private void Water_DrawSprites(On.Water.orig_DrawSprites orig, Water self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
-            sLeaser.sprites[1].scale = clearWater ? 0f : 1f;
+            sLeaser.sprites[1].scale = (config.ClearWater && slugcatUnderWater) ? 0f : 1f;
             orig(self, sLeaser, rCam, timeStacker, camPos);
         }
 
@@ -67,6 +78,9 @@ namespace EFRW.Src
                     introLabel.SetPosition(120, 240);
                     Futile.stage.AddChild(introLabel);
                 }
+
+                //CompletelyOptional.OptionScript
+                //self.redsIllness.cycle
 
                 acc = self.slugcatStats.runspeedFac;
                 minAcc = acc;
@@ -98,13 +112,16 @@ namespace EFRW.Src
             AirInLungsX2(self);
 
             // set data
-            clearWater = self.submerged;
+            slugcatUnderWater = self.submerged;
 
             orig(self, eu);
         }
 
         void BackFlipSlowmotion(Player self)
         {
+            if (!config.SlowBackMotion)
+                return;
+
             if (self.mushroomCounter == 0)
             {
                 if (self.animation == Player.AnimationIndex.Flip)
@@ -120,6 +137,9 @@ namespace EFRW.Src
 
         void AccMovement(Player self)
         {
+            if (!config.MoveAcc)
+                return;
+
             if (self.animation == Player.AnimationIndex.None
                 && self.input[0].x != 0f
                 && self.input[0].y == 0f)
@@ -137,6 +157,9 @@ namespace EFRW.Src
 
         void AirInLungsX2(Player self)
         {
+            if (!config.AirInLungsX2)
+                return;
+
             if (self.submerged && self.airInLungs < 0.9f && self.airInLungs > 0.006f)
             {
                 self.airInLungs += 0.00105f; // +0.0021
@@ -145,6 +168,9 @@ namespace EFRW.Src
 
         void BrokenTeleportation(Player self)
         {
+            if (!config.BrokenTeleport)
+                return;
+
             if (hookRoom != null && hookRoom != self.room)
             {
                 // auto reset in new room
