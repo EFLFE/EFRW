@@ -7,15 +7,9 @@ namespace EFRW.Src
 {
     public class EFMod : PartialityMod
     {
-        // new features
-        const bool EXPERIMENTAL = true;
-
         static EFMod instance;
         static EFConfig config;
 
-        // back flip slow
-        //const float mushCap = 0.17f;
-        bool initMovementUpdate;
         float acc;
         float minAcc;
         float maxAcc;
@@ -57,8 +51,27 @@ namespace EFRW.Src
         public override void OnLoad()
         {
             base.OnLoad();
+            On.Player.ctor += Player_ctor;
             On.Player.MovementUpdate += Player_MovementUpdate;
             On.Water.DrawSprites += Water_DrawSprites;
+        }
+
+        private void Player_ctor(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
+        {
+            orig(self, abstractCreature, world);
+
+#if DEBUG
+            if (introLabel == null)
+            {
+                introLabel = new FLabel("font", "");
+                introLabel.SetPosition(120, 240);
+                Futile.stage.AddChild(introLabel);
+            }
+#endif
+            acc = self.slugcatStats.runspeedFac;
+            minAcc = acc;
+            maxAcc = acc * 1.75f;
+            hookPos = new Vector2[self.bodyChunks.Length];
         }
 
         private void Water_DrawSprites(On.Water.orig_DrawSprites orig, Water self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
@@ -69,49 +82,24 @@ namespace EFRW.Src
 
         private void Player_MovementUpdate(On.Player.orig_MovementUpdate orig, Player self, bool eu)
         {
-            // init
-            if (!initMovementUpdate)
+#if DEBUG
+            // intro
+            if (introIndex < introText.Length)
             {
-                if (EXPERIMENTAL)
-                {
-                    introLabel = new FLabel("font", "");
-                    introLabel.SetPosition(120, 240);
-                    Futile.stage.AddChild(introLabel);
-                }
-
-                //CompletelyOptional.OptionScript
-                //self.redsIllness.cycle
-
-                acc = self.slugcatStats.runspeedFac;
-                minAcc = acc;
-                maxAcc = acc * 1.75f;
-
-                hookPos = new Vector2[self.bodyChunks.Length];
-
-                initMovementUpdate = true;
-                //Debug.Log("acc: " + acc.ToString() + " min: " + minAcc.ToString() + " max: " + maxAcc.ToString());
+                introLabel.text += introText[introIndex].ToString();
+                introIndex++;
             }
-
-            if (EXPERIMENTAL)
+            else if (introTimer++ == 120)
             {
-                // intro
-                if (introIndex < introText.Length)
-                {
-                    introLabel.text += introText[introIndex].ToString();
-                    introIndex++;
-                }
-                else if (introTimer++ == 120)
-                {
-                    introLabel.isVisible = false;
-                }
+                introLabel.isVisible = false;
             }
+#endif
 
             BrokenTeleportation(self);
             BackFlipSlowmotion(self);
             AccMovement(self);
             AirInLungsX2(self);
 
-            // set data
             slugcatUnderWater = self.submerged;
 
             orig(self, eu);
