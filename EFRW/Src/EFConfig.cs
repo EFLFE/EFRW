@@ -18,6 +18,12 @@ namespace EFRW.Src
 
         public bool ClearWater { get; private set; }
 
+        public bool MaxCycleTime { get; private set; }
+
+        public bool UnlimitedRedCycles { get; private set; }
+
+        public bool NightMode { get; private set; }
+
         public EFConfig(PartialityMod mod) : base(mod)
         { }
 
@@ -33,11 +39,21 @@ namespace EFRW.Src
             Tabs[0].AddItem(new OpLabel(new Vector2(100f, 550f), new Vector2(400f, 40f), "EFRW - EFLFE mod config", FLabelAlignment.Center, true));
             float y = 460f;
 
+            // OpKeyBinder
+
+            // general features
             AddCheckBox(ref y, nameof(SlowBackMotion), true, "Slow motion on back flip.");
             AddCheckBox(ref y, nameof(MoveAcc), true, "Smooth acceleration of running speed.");
             AddCheckBox(ref y, nameof(AirInLungsX2), true, "Second breath underwater (AirInLungs x2).");
             AddCheckBox(ref y, nameof(BrokenTeleport), true, "Broken teleportation (key C).");
+
+            // misc
             AddCheckBox(ref y, nameof(ClearWater), false, "When under water, make it transparent.");
+            AddCheckBox(ref y, nameof(MaxCycleTime), false, "Max cycle time (no random).");
+            AddCheckBox(ref y, nameof(NightMode), false, "Night time mode (experimental).");
+#if DEBUG
+            AddCheckBox(ref y, nameof(UnlimitedRedCycles), false, "Unlimited cycles for Hunter.");
+#endif
         }
 
         void AddCheckBox(ref float y, string key, bool defaultBool, string desc)
@@ -51,11 +67,16 @@ namespace EFRW.Src
         {
             base.ConfigOnChange();
 
-            SlowBackMotion = config[nameof(SlowBackMotion)] == "true";
-            MoveAcc        = config[nameof(MoveAcc)]        == "true";
-            AirInLungsX2   = config[nameof(AirInLungsX2)]   == "true";
-            BrokenTeleport = config[nameof(BrokenTeleport)] == "true";
-            ClearWater     = config[nameof(ClearWater)]     == "true";
+            string val;
+
+            if (config.TryGetValue(nameof(SlowBackMotion), out val))     SlowBackMotion = val == "true";
+            if (config.TryGetValue(nameof(MoveAcc), out val))            MoveAcc = val == "true";
+            if (config.TryGetValue(nameof(AirInLungsX2), out val))       AirInLungsX2 = val == "true";
+            if (config.TryGetValue(nameof(BrokenTeleport), out val))     BrokenTeleport = val == "true";
+            if (config.TryGetValue(nameof(ClearWater), out val))         ClearWater = val == "true";
+            if (config.TryGetValue(nameof(MaxCycleTime), out val))       MaxCycleTime = val == "true";
+            if (config.TryGetValue(nameof(UnlimitedRedCycles), out val)) UnlimitedRedCycles = val == "true";
+            if (config.TryGetValue(nameof(NightMode), out val))          NightMode = val == "true";
         }
 
     }

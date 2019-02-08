@@ -10,6 +10,8 @@ namespace EFRW.Src
         static EFMod instance;
         static EFConfig config;
 
+        bool needToInitCat;
+
         float acc;
         float minAcc;
         float maxAcc;
@@ -26,6 +28,8 @@ namespace EFRW.Src
         int tpInTime;
 
         bool slugcatUnderWater;
+
+        NightPalette nightPalette = default(NightPalette);
 
         public override void Init()
         {
@@ -51,27 +55,38 @@ namespace EFRW.Src
         public override void OnLoad()
         {
             base.OnLoad();
+            nightPalette.GenNext();
             On.Player.ctor += Player_ctor;
             On.Player.MovementUpdate += Player_MovementUpdate;
             On.Water.DrawSprites += Water_DrawSprites;
+            On.RainCycle.ctor += RainCycle_ctor;
+            On.RoomCamera.LoadPalette += RoomCamera_LoadPalette;
+        }
+
+        private void RoomCamera_LoadPalette(On.RoomCamera.orig_LoadPalette orig, RoomCamera self, int pal, ref Texture2D texture)
+        {
+            if (config.NightMode)
+            {
+                orig(self, nightPalette.PalA, ref texture);
+            }
+            else
+            {
+                orig(self, pal, ref texture);
+            }
+        }
+
+        private void RainCycle_ctor(On.RainCycle.orig_ctor orig, RainCycle self, World world, float minutes)
+        {
+            orig(self, world, minutes);
+            if (config.MaxCycleTime)
+                self.cycleLength = 33600;
         }
 
         private void Player_ctor(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
         {
             orig(self, abstractCreature, world);
-
-#if DEBUG
-            if (introLabel == null)
-            {
-                introLabel = new FLabel("font", "");
-                introLabel.SetPosition(120, 240);
-                Futile.stage.AddChild(introLabel);
-            }
-#endif
-            acc = self.slugcatStats.runspeedFac;
-            minAcc = acc;
-            maxAcc = acc * 1.75f;
-            hookPos = new Vector2[self.bodyChunks.Length];
+            needToInitCat = true; // or get NullReferenceException
+            nightPalette.GenNext();
         }
 
         private void Water_DrawSprites(On.Water.orig_DrawSprites orig, Water self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
@@ -94,6 +109,27 @@ namespace EFRW.Src
                 introLabel.isVisible = false;
             }
 #endif
+            if (needToInitCat)
+            {
+                needToInitCat = false;
+#if DEBUG
+                if (introLabel == null)
+                {
+                    introLabel = new FLabel("font", "");
+                    introLabel.SetPosition(120, 240);
+                    Futile.stage.AddChild(introLabel);
+                }
+
+                if (config.UnlimitedRedCycles && self.slugcatStats.name == SlugcatStats.Name.Red)
+                {
+                    self.redsIllness.cycle = 9999;
+                }
+#endif
+                acc = self.slugcatStats.runspeedFac;
+                minAcc = acc;
+                maxAcc = acc * 1.75f;
+                hookPos = new Vector2[self.bodyChunks.Length];
+            }
 
             BrokenTeleportation(self);
             BackFlipSlowmotion(self);

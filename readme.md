@@ -5,7 +5,8 @@ Simple (and unbalanced) mod that adds 4 new features:
 * Slow motion on back flip;
 * Smooth acceleration of running speed;
 * Second breath underwater (AirInLungs x2);
-* Broken teleportation (key C).
+* Broken teleportation (key C);
+* And more.
 
 Source: https://github.com/EFLFE/EFRW
 
