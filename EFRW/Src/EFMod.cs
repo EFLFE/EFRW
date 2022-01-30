@@ -1,4 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using On.RWCustom;
 using OptionalUI;
 using Partiality.Modloader;
 using UnityEngine;
@@ -29,6 +34,8 @@ namespace EFRW.Src
 
         bool slugcatUnderWater;
 
+        Color? rndCatColor;
+
         NightPalette nightPalette = default(NightPalette);
 
         public override void Init()
@@ -37,8 +44,8 @@ namespace EFRW.Src
             base.Init();
             ModID = "EFMod";
             author = "EFLFE";
-            Version = "4.0";
-            introText = "EFMod for RainWorld (v4.0)".ToCharArray();
+            Version = "4.1";
+            introText = "EFMod for RainWorld (v4.1)".ToCharArray();
         }
 
         public static OptionInterface LoadOI()
@@ -56,11 +63,134 @@ namespace EFRW.Src
         {
             base.OnLoad();
             nightPalette.GenNext();
-            On.Player.ctor += Player_ctor;
-            On.Player.MovementUpdate += Player_MovementUpdate;
-            On.Water.DrawSprites += Water_DrawSprites;
-            On.RainCycle.ctor += RainCycle_ctor;
-            On.RoomCamera.LoadPalette += RoomCamera_LoadPalette;
+            On.Player.ctor                 += Player_ctor;
+            On.Player.MovementUpdate       += Player_MovementUpdate;
+            On.Player.Update               += Player_Update;
+            On.PlayerGraphics.SlugcatColor += PlayerGraphics_SlugcatColor;
+            On.Water.DrawSprites           += Water_DrawSprites;
+            On.RainCycle.ctor              += RainCycle_ctor;
+            On.RoomCamera.LoadPalette      += RoomCamera_LoadPalette;
+
+            On.SoundLoader.CheckIfFileExistsAsUnityResource += SoundLoader_CheckIfFileExistsAsUnityResource;
+        }
+
+        private bool SoundLoader_CheckIfFileExistsAsUnityResource(On.SoundLoader.orig_CheckIfFileExistsAsUnityResource orig, SoundLoader self, string name)
+        {
+            if (CheckIfFileExistsAsExternal(name))
+            {
+                // Если есть файл в "Rain World\SoundEffects\" то заставить игру загрузить от туда.
+                // По умолчанию сначала вызывается CheckIfFileExistsAsUnityResource.
+                Debug.Log("[EFLFE] On.SoundLoader, force external sound: " + name);
+                return false;
+            }
+
+            return orig(self, name);
+        }
+        private bool CheckIfFileExistsAsExternal(string name)
+        {
+            name = RootFolderDirectory() +
+                "Rain World" + // miss
+                Path.DirectorySeparatorChar.ToString() +
+                "SoundEffects" +
+                Path.DirectorySeparatorChar.ToString() +
+                name;
+
+            if (File.Exists(name + ".wav"))
+                return true;
+            return File.Exists(name + "_1.wav");
+        }
+
+        public static string RootFolderDirectory()
+        {
+            string[] strArray = Assembly.GetExecutingAssembly().Location.Split(Path.DirectorySeparatorChar);
+            string str = string.Empty;
+            for (int index = 0; index < strArray.Length - 3; ++index)
+                str = str + strArray[index] + (object)Path.DirectorySeparatorChar;
+            return str;
+        }
+
+        private Color PlayerGraphics_SlugcatColor(On.PlayerGraphics.orig_SlugcatColor orig, int i)
+        {
+            if (!config.RandomColor)
+            {
+                return orig(i);
+            }
+            // red: 255, 144, 133
+            // mask 191, 134, 145 | 134, 36, 46
+            //return new Color(0.5254901960784314f, 0.1411764705882353f, 0.1803921568627451f);
+
+            if (!rndCatColor.HasValue)
+                rndCatColor = new Color(UnityEngine.Random.Range(0.5f, 1f), UnityEngine.Random.Range(0.5f, 1f), UnityEngine.Random.Range(0.5f, 1f));
+
+            return rndCatColor.Value;
+            //return new Color(.6f, 1f, 1f);
+        }
+
+        private void Player_Update(On.Player.orig_Update orig, Player player, bool eu)
+        {
+            orig(player, eu);
+
+            if (player.dead)
+                rndCatColor = null;
+
+            if (config.CheatMode)
+            {
+                try
+                {
+                    if (Input.GetKeyDown(KeyCode.Q))
+                    {
+                        // ScavengerBomb
+                        if (player.grasps[0] == null)
+                        {
+                            var imp = new AbstractPhysicalObject(player.room.world, AbstractPhysicalObject.AbstractObjectType.ScavengerBomb, null, player.coord, player.room.game.GetNewID());
+                            imp.RealizeInRoom();
+                            player.Grab(imp.realizedObject, 0, 0, Creature.Grasp.Shareability.CanNotShare, 1f, true, false);
+                        }
+                    }
+                    else if (Input.GetKeyDown(KeyCode.W))
+                    {
+                        if (player.grasps[0] == null)
+                        {
+                            var imp = new AbstractConsumable(player.room.world, AbstractPhysicalObject.AbstractObjectType.PuffBall, null, player.coord, player.room.game.GetNewID(), -1, -1, null);
+                            imp.RealizeInRoom();
+                            player.Grab(imp.realizedObject, 0, 0, Creature.Grasp.Shareability.CanNotShare, 1f, true, false);
+                        }
+                    }
+                    else if (Input.GetKeyDown(KeyCode.E))
+                    {
+                        if (player.grasps[0] == null)
+                        {
+                            var imp = new AbstractSpear(player.room.world, null, player.coord, player.room.game.GetNewID(), false);
+                            imp.RealizeInRoom();
+                            player.Grab(imp.realizedObject, 0, 0, Creature.Grasp.Shareability.CanNotShare, 1f, true, false);
+                        }
+                    }
+                    else if (Input.GetKeyDown(KeyCode.R))
+                    {
+                        if (player.grasps[0] == null)
+                        {
+                            var imp = new AbstractSpear(player.room.world, null, player.coord, player.room.game.GetNewID(), true);
+                            imp.RealizeInRoom();
+                            player.Grab(imp.realizedObject, 0, 0, Creature.Grasp.Shareability.CanNotShare, 1f, true, false);
+                        }
+                    }
+                    else if (Input.GetKeyDown(KeyCode.T))
+                    {
+                        if (player.grasps[0] == null)
+                        {
+                            var imp = new AbstractConsumable(player.room.world, AbstractPhysicalObject.AbstractObjectType.NeedleEgg, null, player.coord, player.room.game.GetNewID(), -1, -1, null);
+                            imp.RealizeInRoom();
+                            player.Grab(imp.realizedObject, 0, 0, Creature.Grasp.Shareability.CanNotShare, 1f, true, false);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("player.Grab Exception: " + ex.ToString());
+                    if (player != null)
+                        PlaySound(player, SoundID.Zapper_Zap);
+                }
+            }
         }
 
         private void RoomCamera_LoadPalette(On.RoomCamera.orig_LoadPalette orig, RoomCamera self, int pal, ref Texture2D texture)
@@ -95,7 +225,7 @@ namespace EFRW.Src
             orig(self, sLeaser, rCam, timeStacker, camPos);
         }
 
-        private void Player_MovementUpdate(On.Player.orig_MovementUpdate orig, Player self, bool eu)
+        private void Player_MovementUpdate(On.Player.orig_MovementUpdate orig, Player player, bool eu)
         {
 #if DEBUG
             // intro
@@ -125,20 +255,20 @@ namespace EFRW.Src
                     self.redsIllness.cycle = 9999;
                 }
 #endif
-                acc = self.slugcatStats.runspeedFac;
+                acc = player.slugcatStats.runspeedFac;
                 minAcc = acc;
                 maxAcc = acc * 1.75f;
-                hookPos = new Vector2[self.bodyChunks.Length];
+                hookPos = new Vector2[player.bodyChunks.Length];
             }
 
-            BrokenTeleportation(self);
-            BackFlipSlowmotion(self);
-            AccMovement(self);
-            AirInLungsX2(self);
+            BrokenTeleportation(player);
+            BackFlipSlowmotion(player);
+            AccMovement(player);
+            AirInLungsX2(player);
 
-            slugcatUnderWater = self.submerged;
+            slugcatUnderWater = player.submerged;
 
-            orig(self, eu);
+            orig(player, eu);
         }
 
         void BackFlipSlowmotion(Player self)

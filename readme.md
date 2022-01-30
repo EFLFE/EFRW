@@ -13,8 +13,8 @@ Source: https://github.com/EFLFE/EFRW
 ## How to install
 
 * Use the latest version of Partiality (0.3.11 or newer)
+	https://github.com/PartialityModding/PartialityLauncher/releases
 * Requires latest version of config machine by topicular
-* https://github.com/PartialityModding/PartialityLauncher/releases
 
 ## TODO
 * Fix telepor;
